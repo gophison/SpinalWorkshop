@@ -26,6 +26,7 @@ class CounterTester extends AnyFunSuite {
         assert(dut.io.value.toInt == counter, "dut.io.value missmatch")
         assert(dut.io.full.toBoolean == (counter == 15), "dut.io.full missmatch")
         counter = if(dut.io.clear.toBoolean) 0 else (counter + 1) & 0xF
+        println(s"counter: $counter")
       }
     }
   }

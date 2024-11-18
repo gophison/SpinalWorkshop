@@ -18,6 +18,7 @@ project/plugins/project/
 .worksheet
 
 .idea
+.metals
 out
 
 # Eclipse

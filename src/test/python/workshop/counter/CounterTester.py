@@ -5,30 +5,37 @@ from cocotb.result import TestFailure
 from cocotb.triggers import RisingEdge, Timer
 
 
-@cocotb.coroutine
-def genClockAndReset(dut):
-    dut.reset = 1
-    dut.clk   = 0
-    yield Timer(1000)
-    # TODO Animate the dut.clk and dut.reset
+async def genClockAndReset(dut):
+    dut.reset.value = 1
+    dut.clk.value   = 0
+    await Timer(1, 'ns')
+
+    dut.reset.value = 0
+    await Timer(1, 'ns')
+    while True:
+        dut.clk.value = 1
+        await Timer(0.5, 'ns')
+        dut.clk.value = 0
+        await Timer(0.5, 'ns')
 
 @cocotb.test()
-def test1(dut):
-    cocotb.fork(genClockAndReset(dut))
+async def test1(dut):
+    cocotb.start_soon(genClockAndReset(dut))
 
     counter = 0  # Used to model the hardware
     for i in range(256):
-        yield RisingEdge(dut.clk)
-        # TODO Check that the DUT match with the model (counter variable)
-        # read io_value =>     dut.io_value
-        # read io_full =>      dut.io_full
-        # raise TestFailure("io_value missmatch")
-        # raise TestFailure("io_full missmatch")
+        await RisingEdge(dut.clk)
+        if dut.io_value.value != counter:
+            raise TestFailure("io_value mismatch")
 
+        if dut.io_full.value != 1 if counter == 15 else 0:
+            raise TestFailure("io_full mismatch")
 
-        # TODO Animate the model depending DUT inputs
+        if dut.io_clear.value == 1:
+            counter = 0
+        else:
+            counter = (counter + 1) & 0xf
 
-        # TODO Generate random stimulus
-
+        dut.io_clear.value = (random.random() < 0.03)
 
 

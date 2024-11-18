@@ -1,6 +1,8 @@
-VERILOG_SOURCES += ../common/timescaleit.v Counter.v
-TOPLEVEL=Counter
-MODULE=CounterTester
+VERILOG_SOURCES += ../common/timescaleit.v ../../../../../rtl/Counter.v
+TOPLEVEL = Counter
+MODULE = CounterTester
+TIMESCALE = 1ns/1ps
+WAVES = 1
+VERILOG_INCLUDE_DIRS += ../common
 
-include $(shell cocotb-config --makefiles)/Makefile.inc
 include $(shell cocotb-config --makefiles)/Makefile.sim

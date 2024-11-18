@@ -10,4 +10,14 @@ case class Counter(width: Int) extends Component {
   }
 
   // TODO define the logic
+  val counter = Reg(UInt(width bits)) init 0
+
+  when(io.clear) {
+    counter := 0
+  } otherwise {
+    counter := io.value + 1
+  }
+
+  io.value := counter
+  io.full := io.value.andR
 }
