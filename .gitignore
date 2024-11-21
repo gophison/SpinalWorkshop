@@ -50,3 +50,4 @@ waves/*/*
 *.vpl
 *.vpi
 *.o
+**/sim_build/**

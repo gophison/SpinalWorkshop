@@ -6,7 +6,7 @@ import spinal.core._
 // Run this main to generate the RTL
 object ApbPwmMain{
   def main(args: Array[String]) {
-    SpinalConfig(targetDirectory = "rtl").generateVhdl(
+    SpinalConfig(targetDirectory = "rtl").generateVerilog(
       gen = ApbPwm(
         apbConfig = ApbConfig(
           addressWidth = 8,
