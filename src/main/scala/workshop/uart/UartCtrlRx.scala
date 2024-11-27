@@ -14,6 +14,10 @@ case class UartRxGenerics( preSamplingSize: Int = 1,
     SpinalWarning(s"It's not nice to have a even samplingSize value at ${ScalaLocated.short} (because of the majority vote)")
 }
 
+object UartCtrlRxState extends SpinalEnum {
+  val IDLE, START, DATA, STOP = newElement()
+}
+
 case class UartCtrlRx(generics : UartRxGenerics) extends Component{
   import generics._  // Allow to directly use generics attribute without generics. prefix
   val io = new Bundle{
@@ -38,7 +42,7 @@ case class UartCtrlRx(generics : UartRxGenerics) extends Component{
   // Provide a bitTimer.tick each rxSamplePerBit
   // reset() can be called to recenter the counter over a start bit.
   val bitTimer = new Area {
-    val counter  = Reg(UInt(log2Up(rxdSamplePerBit) bit))
+    val counter  = Reg(UInt(log2Up(rxdSamplePerBit) bit)) init 0
     val recenter = False
     val tick = False
     when(sampler.tick) {
@@ -55,7 +59,7 @@ case class UartCtrlRx(generics : UartRxGenerics) extends Component{
   // Provide bitCounter.value that count up each bitTimer.tick, Used by the state machine to count data bits and stop bits
   // reset() can be called to reset it to zero
   val bitCounter = new Area {
-    val value = Reg(UInt(3 bits))
+    val value = Reg(UInt(3 bits)) init 0
     val clear = False
 
     when(bitTimer.tick) {
@@ -69,5 +73,40 @@ case class UartCtrlRx(generics : UartRxGenerics) extends Component{
   // Statemachine that use all precedent area
   val stateMachine = new Area {
     // TODO state machine
+    import UartCtrlRxState._
+
+    val state  = RegInit(IDLE)
+    val buffer = Reg(io.read.payload) init 0
+
+    io.read.valid := False
+    switch(state) {
+      is(IDLE) {
+        when(sampler.tick && !sampler.value) {
+          state := START
+          bitTimer.recenter := True
+        }
+      }
+      is(START) {
+        when(bitTimer.tick) {
+          state := DATA
+          bitCounter.clear := True
+        }
+      }
+      is(DATA) {
+        when(bitTimer.tick) {
+          buffer(bitCounter.value) := sampler.value
+          when(bitCounter.value === 7) {
+            state := STOP
+          }
+        }
+      }
+      is(STOP) {
+        when(bitTimer.tick) {
+          state := IDLE
+          io.read.valid := True
+        }
+      }
+    }
   }
+  io.read.payload := stateMachine.buffer
 }
