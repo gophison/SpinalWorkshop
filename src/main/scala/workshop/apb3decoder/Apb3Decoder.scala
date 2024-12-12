@@ -33,5 +33,26 @@ case class Apb3Decoder(apbConfig : Apb3Config, outputsMapping : Seq[Mapping]) ex
   }
 
   // TODO fully asynchronous apb3 decoder
+  for (output <- io.outputs) {
+    output.PADDR := io.input.PADDR
+    output.PENABLE := io.input.PENABLE
+    output.PWRITE := io.input.PWRITE
+    output.PWDATA := io.input.PWDATA
+  }
+
+  // Address decoding
+  val mappingHits = outputsMapping.map(_.hit(io.input.PADDR))
+  val mappingHitsIndex = OHToUInt(mappingHits)
+
+  for (i <- 0 until outputsMapping.length) {
+    io.outputs(i).PSEL.lsb := mappingHits(i) && io.input.PSEL.lsb
+  }
+
+  io.input.PREADY := io.outputs(mappingHitsIndex).PREADY
+  io.input.PRDATA := io.outputs(mappingHitsIndex).PRDATA
+  if (apbConfig.useSlaveError) {
+    io.input.PSLVERROR := io.outputs(mappingHitsIndex).PSLVERROR
+  }
+
 }
 
